@@ -58,6 +58,10 @@ assert(count($bufferedInner->events) === 2);
 $headers = (new HmacSigner)->headers(Dsn::parse('https://sk_ase_id:secret@example.test/api/v1/ingest/event'), 'POST', '/api/v1/ingest/event', '{"ok":true}');
 assert(isset($headers['X-ASE-Key-Id'], $headers['X-ASE-Signature']));
 
+$tokenDsn = Dsn::parse('https://sk_ase_1234567890abcdefTOKEN@example.test/api/v1/ingest/envelope');
+assert($tokenDsn->keyId === 'sk_ase_1234567890abc');
+assert($tokenDsn->secret === 'sk_ase_1234567890abcdefTOKEN');
+
 Ase::init($client);
 Ase::captureMessage('Facade works');
 assert(count($transport->events) === 3);

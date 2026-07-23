@@ -43,8 +43,10 @@ Ase::flush();
 DSN format:
 
 ```text
-https://{server-key-id}:{server-secret}@api-ase.parkwebit.nl/api/v1/ingest/envelope
+https://{server-token}@api-ase.parkwebit.nl/api/v1/ingest/envelope
 ```
+
+Legacy `https://{server-key-id}:{server-secret}@...` DSNs are still supported, but new installs should use the single-token format. The SDK derives the public key id internally and still signs requests with HMAC.
 
 Safety defaults:
 

@@ -68,7 +68,16 @@ final readonly class SyncTransport implements Transport
             $attempts = max(1, $this->options->maxRetries + 1);
             for ($attempt = 1; $attempt <= $attempts; $attempt++) {
                 $response = $this->http->sendRequest($request);
-                if ($response->getStatusCode() < 500) {
+                $status = $response->getStatusCode();
+                if ($status >= 200 && $status < 300) {
+                    return;
+                }
+                if ($status < 500) {
+                    $this->logger?->warning('ASE transport rejected event batch', [
+                        'status' => $status,
+                        'body' => $this->options->debug ? mb_substr((string) $response->getBody(), 0, 2000) : null,
+                    ]);
+
                     return;
                 }
             }
