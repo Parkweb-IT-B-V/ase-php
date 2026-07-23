@@ -1,0 +1,25 @@
+{
+  "name": "parkweb/ase-php",
+  "description": "Generic PHP SDK for All Seeing Eye event ingestion.",
+  "version": "0.1.0",
+  "type": "library",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.2",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-message": "^1.0",
+    "psr/log": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ParkWeb\\Ase\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ParkWeb\\Ase\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "stable"
+}
