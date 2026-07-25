@@ -26,6 +26,15 @@ final readonly class EventFactory
         return $this->base($level, $message, $scope);
     }
 
+    /** @param array<string, mixed> $extra */
+    public function telemetry(string $type, string $message, array $extra, Scope $scope, Level $level = Level::Info): array
+    {
+        return $this->base($level, $message, $scope, [
+            'telemetry_type' => $type,
+            'telemetry' => $extra,
+        ]);
+    }
+
     /** @param array<int, array<string, mixed>> $trace */
     private function frames(array $trace): array
     {
@@ -38,7 +47,8 @@ final readonly class EventFactory
     }
 
     /** @return array<string, mixed> */
-    private function base(Level $level, string $message, Scope $scope): array
+    /** @param array<string, mixed> $extra */
+    private function base(Level $level, string $message, Scope $scope, array $extra = []): array
     {
         $payload = [
             'event_id' => 'evt_'.bin2hex(random_bytes(16)),
@@ -48,9 +58,13 @@ final readonly class EventFactory
             'platform' => 'php',
             'message' => mb_substr($message, 0, 8192),
             'release' => $this->options->release,
-            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.0'],
+            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.2'],
             'runtime' => ['name' => 'php', 'version' => PHP_VERSION],
         ] + $scope->toPayload();
+
+        if ($extra !== []) {
+            $payload['extra'] = array_merge($payload['extra'] ?? [], $extra);
+        }
 
         return $this->scrubber->scrub($payload);
     }

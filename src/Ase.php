@@ -23,6 +23,12 @@ final class Ase
         return self::$client?->captureMessage($message, $level);
     }
 
+    /** @param array<string, mixed> $extra */
+    public static function captureTelemetry(string $type, string $message, array $extra = [], Level $level = Level::Info): ?string
+    {
+        return self::$client?->captureTelemetry($type, $message, $extra, $level);
+    }
+
     /** @param array<string, mixed> $user */
     public static function setUser(array $user): void
     {
@@ -32,6 +38,11 @@ final class Ase
     public static function setTag(string $key, string $value): void
     {
         self::$client?->setTag($key, $value);
+    }
+
+    public static function setExtra(string $key, mixed $value): void
+    {
+        self::$client?->setExtra($key, $value);
     }
 
     /** @param array<string, mixed> $breadcrumb */

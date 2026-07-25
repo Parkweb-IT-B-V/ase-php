@@ -44,7 +44,11 @@ final readonly class SyncTransport implements Transport
     private function attemptSend(array $events): void
     {
         try {
-            $body = json_encode(['sent_at' => gmdate(DATE_ATOM), 'events' => $events], JSON_THROW_ON_ERROR);
+            $body = json_encode([
+                'sent_at' => gmdate(DATE_ATOM),
+                'sdk' => $this->sdk($events),
+                'events' => $events,
+            ], JSON_THROW_ON_ERROR);
             $path = parse_url($this->dsn->endpoint, PHP_URL_PATH) ?: '/api/v1/ingest/envelope';
             $headers = [
                 'Accept' => 'application/json',
@@ -84,5 +88,19 @@ final readonly class SyncTransport implements Transport
         } catch (\Throwable $throwable) {
             $this->logger?->debug('ASE transport failed', ['exception' => $throwable::class, 'message' => $throwable->getMessage()]);
         }
+    }
+
+    /** @param array<int, array<string, mixed>> $events */
+    private function sdk(array $events): array
+    {
+        $sdk = $events[0]['sdk'] ?? null;
+        if (is_array($sdk) && isset($sdk['name'], $sdk['version'])) {
+            return [
+                'name' => (string) $sdk['name'],
+                'version' => (string) $sdk['version'],
+            ];
+        }
+
+        return ['name' => 'parkweb/ase-php', 'version' => '0.1.2'];
     }
 }

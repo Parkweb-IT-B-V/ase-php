@@ -30,6 +30,12 @@ final class Client
         return $this->capture($this->events->message($message, $level, $this->scope));
     }
 
+    /** @param array<string, mixed> $extra */
+    public function captureTelemetry(string $type, string $message, array $extra = [], Level $level = Level::Info): ?string
+    {
+        return $this->capture($this->events->telemetry($type, $message, $extra, $this->scope, $level));
+    }
+
     /** @param array<string, mixed> $user */
     public function setUser(array $user): void
     {

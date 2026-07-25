@@ -41,11 +41,16 @@ assert(is_string($id) && str_starts_with($id, 'evt_'));
 assert($transport->events[0]['level'] === 'warning');
 assert($transport->events[0]['user']['password'] === '[REDACTED]');
 
+$telemetryId = $client->captureTelemetry('query', 'Slow query', ['sql' => 'select * from users', 'duration_ms' => 120], Level::Warning);
+assert(is_string($telemetryId) && str_starts_with($telemetryId, 'evt_'));
+assert($transport->events[1]['extra']['telemetry_type'] === 'query');
+assert($transport->events[1]['extra']['telemetry']['duration_ms'] === 120);
+
 $client->withScope(function ($scope, $client): void {
     $scope->setTag('temporary', 'yes');
     $client->captureException(new RuntimeException('Scoped failure'));
 });
-assert($transport->events[1]['exception']['type'] === RuntimeException::class);
+assert($transport->events[2]['exception']['type'] === RuntimeException::class);
 assert(($transport->events[0]['tags']['temporary'] ?? null) === null);
 
 $bufferedInner = new ArrayTransport;
@@ -64,6 +69,7 @@ assert($tokenDsn->secret === 'sk_ase_1234567890abcdefTOKEN');
 
 Ase::init($client);
 Ase::captureMessage('Facade works');
-assert(count($transport->events) === 3);
+Ase::captureTelemetry('cache', 'Cache hit', ['key' => 'settings']);
+assert(count($transport->events) === 5);
 
 echo "php-sdk tests passed\n";
