@@ -10,13 +10,14 @@ final readonly class EventFactory
 
     public function exception(Throwable $throwable, Scope $scope): array
     {
-        return $this->base(Level::Error, $throwable->getMessage(), $scope) + [
+        return $this->base($this->levelFor($throwable), $throwable->getMessage(), $scope) + [
             'exception' => [
                 'type' => $throwable::class,
                 'message' => $throwable->getMessage(),
                 'file' => $throwable->getFile(),
                 'line' => $throwable->getLine(),
-                'stacktrace' => ['frames' => $this->frames($throwable->getTrace())],
+                'mechanism' => $this->mechanism($throwable),
+                'stacktrace' => ['frames' => $this->frames($throwable->getTrace(), $throwable)],
             ],
         ];
     }
@@ -36,14 +37,110 @@ final readonly class EventFactory
     }
 
     /** @param array<int, array<string, mixed>> $trace */
-    private function frames(array $trace): array
+    private function frames(array $trace, ?Throwable $throwable = null): array
     {
-        return array_map(fn (array $frame): array => [
-            'filename' => isset($frame['file']) ? (string) $frame['file'] : null,
-            'function' => isset($frame['function']) ? (string) $frame['function'] : null,
-            'line' => isset($frame['line']) ? (int) $frame['line'] : null,
+        $frames = [];
+        if ($throwable !== null && $throwable->getFile() !== '') {
+            $frames[] = $this->frame($throwable->getFile(), null, $throwable->getLine());
+        }
+
+        foreach (array_slice($trace, -99) as $frame) {
+            $frames[] = $this->frame(
+                isset($frame['file']) ? (string) $frame['file'] : null,
+                isset($frame['function']) ? (string) $frame['function'] : null,
+                isset($frame['line']) ? (int) $frame['line'] : null,
+            );
+        }
+
+        return $frames;
+    }
+
+    private function frame(?string $filename, ?string $function, ?int $line): array
+    {
+        $frame = [
+            'filename' => $filename,
+            'function' => $function,
+            'line' => $line,
             'column' => null,
-        ], array_slice($trace, -100));
+        ];
+
+        if (is_string($filename) && $filename !== '') {
+            $view = $this->compiledBladeSource($filename);
+            if ($view !== null) {
+                $frame['view'] = $view;
+            }
+        }
+
+        return $frame;
+    }
+
+    private function levelFor(Throwable $throwable): Level
+    {
+        if (! $throwable instanceof \ErrorException) {
+            return Level::Error;
+        }
+
+        return match ($throwable->getSeverity()) {
+            E_DEPRECATED, E_USER_DEPRECATED, E_WARNING, E_USER_WARNING, E_NOTICE, E_USER_NOTICE, E_STRICT => Level::Warning,
+            default => Level::Error,
+        };
+    }
+
+    /** @return array<string, mixed> */
+    private function mechanism(Throwable $throwable): array
+    {
+        if (! $throwable instanceof \ErrorException) {
+            return ['type' => 'exception', 'handled' => false];
+        }
+
+        return [
+            'type' => 'php_error',
+            'handled' => false,
+            'severity' => $throwable->getSeverity(),
+            'severity_name' => $this->severityName($throwable->getSeverity()),
+        ];
+    }
+
+    private function severityName(int $severity): string
+    {
+        return match ($severity) {
+            E_ERROR => 'E_ERROR',
+            E_WARNING => 'E_WARNING',
+            E_PARSE => 'E_PARSE',
+            E_NOTICE => 'E_NOTICE',
+            E_CORE_ERROR => 'E_CORE_ERROR',
+            E_CORE_WARNING => 'E_CORE_WARNING',
+            E_COMPILE_ERROR => 'E_COMPILE_ERROR',
+            E_COMPILE_WARNING => 'E_COMPILE_WARNING',
+            E_USER_ERROR => 'E_USER_ERROR',
+            E_USER_WARNING => 'E_USER_WARNING',
+            E_USER_NOTICE => 'E_USER_NOTICE',
+            E_STRICT => 'E_STRICT',
+            E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
+            E_DEPRECATED => 'E_DEPRECATED',
+            E_USER_DEPRECATED => 'E_USER_DEPRECATED',
+            default => 'E_UNKNOWN',
+        };
+    }
+
+    /** @return array{compiled: string, source: string}|null */
+    private function compiledBladeSource(string $filename): ?array
+    {
+        $normalized = str_replace('\\', '/', $filename);
+        if (! str_contains($normalized, '/storage/framework/views/') || ! is_file($filename) || ! is_readable($filename)) {
+            return null;
+        }
+
+        $contents = file_get_contents($filename);
+        if (! is_string($contents) || $contents === '') {
+            return ['compiled' => $filename, 'source' => 'unknown'];
+        }
+
+        if (preg_match('/\/\*\*PATH\s+(.+?)\s+ENDPATH\*\*\//', $contents, $matches) === 1) {
+            return ['compiled' => $filename, 'source' => $matches[1]];
+        }
+
+        return ['compiled' => $filename, 'source' => 'unknown'];
     }
 
     /** @return array<string, mixed> */
@@ -58,7 +155,7 @@ final readonly class EventFactory
             'platform' => 'php',
             'message' => mb_substr($message, 0, 8192),
             'release' => $this->options->release,
-            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.2'],
+            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.3'],
             'runtime' => ['name' => 'php', 'version' => PHP_VERSION],
         ] + $scope->toPayload();
 

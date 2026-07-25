@@ -53,6 +53,11 @@ $client->withScope(function ($scope, $client): void {
 assert($transport->events[2]['exception']['type'] === RuntimeException::class);
 assert(($transport->events[0]['tags']['temporary'] ?? null) === null);
 
+$client->captureException(new ErrorException('Deprecated null string', 0, E_DEPRECATED, __FILE__, __LINE__));
+assert($transport->events[3]['level'] === 'warning');
+assert($transport->events[3]['exception']['mechanism']['severity_name'] === 'E_DEPRECATED');
+assert($transport->events[3]['exception']['stacktrace']['frames'][0]['filename'] === __FILE__);
+
 $bufferedInner = new ArrayTransport;
 $buffer = new BufferedTransport($bufferedInner, 2);
 $buffer->send(['event_id' => 'a']);
@@ -70,6 +75,6 @@ assert($tokenDsn->secret === 'sk_ase_1234567890abcdefTOKEN');
 Ase::init($client);
 Ase::captureMessage('Facade works');
 Ase::captureTelemetry('cache', 'Cache hit', ['key' => 'settings']);
-assert(count($transport->events) === 5);
+assert(count($transport->events) === 6);
 
 echo "php-sdk tests passed\n";
