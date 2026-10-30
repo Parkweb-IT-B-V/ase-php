@@ -155,7 +155,7 @@ final readonly class EventFactory
             'platform' => 'php',
             'message' => mb_substr($message, 0, 8192),
             'release' => $this->options->release,
-            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.3'],
+            'sdk' => ['name' => 'parkweb/ase-php', 'version' => '0.1.5'],
             'runtime' => ['name' => 'php', 'version' => PHP_VERSION],
         ] + $scope->toPayload();
 

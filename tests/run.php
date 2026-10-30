@@ -39,6 +39,7 @@ $client->setTag('app', 'checkout');
 $id = $client->captureMessage('Payment warning', Level::Warning);
 assert(is_string($id) && str_starts_with($id, 'evt_'));
 assert($transport->events[0]['level'] === 'warning');
+assert($transport->events[0]['sdk'] === ['name' => 'parkweb/ase-php', 'version' => '0.1.5']);
 assert($transport->events[0]['user']['password'] === '[REDACTED]');
 
 $telemetryId = $client->captureTelemetry('query', 'Slow query', ['sql' => 'select * from users', 'duration_ms' => 120], Level::Warning);

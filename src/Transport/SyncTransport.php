@@ -53,7 +53,7 @@ final readonly class SyncTransport implements Transport
             $headers = [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
-                'User-Agent' => 'parkweb-ase-php/0.1.0',
+                'User-Agent' => 'parkweb-ase-php/0.1.5',
             ];
 
             if ($this->options->gzip && function_exists('gzencode')) {
@@ -101,6 +101,6 @@ final readonly class SyncTransport implements Transport
             ];
         }
 
-        return ['name' => 'parkweb/ase-php', 'version' => '0.1.2'];
+        return ['name' => 'parkweb/ase-php', 'version' => '0.1.5'];
     }
 }
